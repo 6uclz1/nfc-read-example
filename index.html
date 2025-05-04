@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NFCリーダーサンプル</title>
+</head>
+<body>
+  <h1>NFCタグリーダー</h1>
+  <button id="scanButton">NFCスキャン開始</button>
+  <pre id="output"></pre>
+
+  <script>
+    const scanButton = document.getElementById('scanButton');
+    const output = document.getElementById('output');
+
+    scanButton.addEventListener('click', async () => {
+      if ('NDEFReader' in window) {
+        try {
+          const ndef = new NDEFReader();
+          await ndef.scan();
+          output.textContent = 'NFCスキャン中... タグをかざしてください。';
+
+          ndef.onreading = event => {
+            const { serialNumber, message } = event;
+            let result = `タグのシリアル番号: ${serialNumber}\n`;
+
+            for (const record of message.records) {
+              result += `\nレコードタイプ: ${record.recordType}\n`;
+
+              switch (record.recordType) {
+                case "text":
+                  const textDecoder = new TextDecoder(record.encoding);
+                  result += `テキスト: ${textDecoder.decode(record.data)}\n`;
+                  break;
+                case "url":
+                  const urlDecoder = new TextDecoder();
+                  result += `URL: ${urlDecoder.decode(record.data)}\n`;
+                  break;
+                default:
+                  result += `未対応のデータ形式\n`;
+              }
+            }
+
+            output.textContent = result;
+          };
+
+          ndef.onerror = () => {
+            output.textContent = 'エラーが発生しました。もう一度お試しください。';
+          };
+        } catch (error) {
+          output.textContent = `NFC読み取りエラー: ${error.message}`;
+        }
+      } else {
+        output.textContent = 'このブラウザはWeb NFCをサポートしていません。';
+      }
+    });
+  </script>
+</body>
+</html>
